@@ -38,7 +38,7 @@
 
 - name: Stop (init.d's) stunnel4
   systemd:
-    name: stunnel4.service
+    name: stunnel.service
     state: stopped
 
 - name: Remove the stunnel init.d script
