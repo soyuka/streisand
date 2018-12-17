@@ -4,14 +4,6 @@
     id: A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     keyserver: keyserver.ubuntu.com
 
-- name: Add the Tor repository
-  apt_repository:
-    repo: 'deb https://deb.torproject.org/torproject.org {{ ansible_lsb.codename }} main'
-  register: tor_add_apt_repository
-  until: not tor_add_apt_repository.failed
-  retries: "{{ apt_repository_retries }}"
-  delay: "{{ apt_repository_delay }}"
-
 - name: Install the package to keep the Tor signing key current
   apt:
     package: deb.torproject.org-keyring
@@ -45,34 +37,6 @@
     owner: root
     group: root
     mode: 0644
-
-# TODO(@cpu) - This should be removed once it isn't required, maybe in the next
-# release after tor 0.3.0.9
-- name: Copy a local override for the Tor AppArmor profile in place
-  copy:
-    src: apparmor-local-override
-    dest: /etc/apparmor.d/local/system_tor
-    owner: root
-    group: root
-    mode: 0644
-
-# TODO(@cpu) - In theory it seems like it should be possible to add the
-# following to the local override from above:
-#     /usr/bin/obfsproxy ix,
-#     /usr/bin/obfs4proxy ix,
-# but doing so results in an error from the existing `PUx` modifiers:
-#     profile system_tor: has merged rule /usr/bin/obfs4proxy with conflicting x modifiers
-# in the interest of fixing a regression we work around this by changing the
-# dist provided `/etc/apparmor.d/abstractions/tor` file.
-- name: Fix the distro Tor apparmor abstraction
-  replace:
-    path: /etc/apparmor.d/abstractions/tor
-    regexp: '^([\s]*)/usr/bin/(obfs4?proxy) PUx,$'
-    replace: '\1/usr/bin/\2 ix,'
-    backup: yes
-
-- name: Reload the system_tor AppArmor profile for the override to take effect
-  command: apparmor_parser -r /etc/apparmor.d/system_tor
 
 - name: Restart Tor so the server fingerprint will be available in the state file, and the hidden service for the Gateway will start running
   service:
